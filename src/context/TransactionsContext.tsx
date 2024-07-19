@@ -1,5 +1,6 @@
 /* eslint-disable react/jsx-no-constructed-context-values */
-import { createContext, ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { createContext } from 'use-context-selector';
 
 import { api } from '../lib/axios';
 
@@ -36,7 +37,7 @@ interface ITransactionsProviderProps {
 export function TransactionsProvider({ children }: ITransactionsProviderProps) {
   const [transactions, setTransactions] = useState<ITransactions[]>([]);
 
-  async function fetchTransactions(query?: string) {
+  const fetchTransactions = useCallback(async (query?: string) => {
     const response: ITransactions[] = await api.get('transactions', {
       params: {
         _sort: 'created_at',
@@ -46,28 +47,26 @@ export function TransactionsProvider({ children }: ITransactionsProviderProps) {
     });
 
     setTransactions(response);
-  }
+  }, []);
 
-  async function createTransaction({
-    category,
-    description,
-    price,
-    type,
-  }: ICreateTransactionInput) {
-    const response = await api.post('/transactions', {
-      category,
-      description,
-      price,
-      type,
-      created_at: new Date(),
-    });
+  const createTransaction = useCallback(
+    async ({ category, description, price, type }: ICreateTransactionInput) => {
+      const response = await api.post('/transactions', {
+        category,
+        description,
+        price,
+        type,
+        created_at: new Date(),
+      });
 
-    setTransactions((prevState) => [response.data, ...prevState]);
-  }
+      setTransactions((prevState) => [response.data, ...prevState]);
+    },
+    [],
+  );
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [fetchTransactions]);
 
   return (
     <TransactionsContext.Provider
